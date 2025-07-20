@@ -7,6 +7,32 @@ import time
 
 # ====== CONFIG ======
 st.set_page_config(page_title="🏃‍♂️ Runalyze Gen-Z", layout="centered")
+column_map = {
+    'Elapsed Time': 'duration_sec',
+    'Waktu Total': 'duration_sec',
+    'Distance': 'distance_km',
+    'Jarak': 'distance_km',
+    'Activity Date': 'date',
+    'Tanggal Aktivitas': 'date',
+    'Activity Type': 'activity_type',
+    'Jenis aktivitas': 'activity_type',
+}
+
+# ====== DESKRIPSI LABEL ======
+runner_label_desc = {
+    "Ghost Jogger": "👻 Pelari misterius yang suka muncul dan hilang tiba-tiba. Konsistensi? Nggak kenal.",
+    "Weekend Warrior": "🛌 Senin sampai Jumat rebahan, Sabtu Minggu langsung tancap gas. Balance life banget.",
+    "Steady Strider": "🧘‍♂️ Konsisten dan tenang. Gak nge-push, tapi selalu jalan. Pelari mindfulness sejati.",
+    "Marathon Maniac": "🔥 Ini gila sih... Tiap minggu kayak latihan buat Ironman. Mungkin kamu punya 2 kaki dan 4 paru-paru."
+}
+
+gpa_label_desc = {
+    "😵 AFK Runner": "Kamu lebih sering AFK daripada lari. Yuk, mulai gerak biar gak karatan!",
+    "😴 Jogger Noob": "Masih pemula, tapi udah mulai. Semangat terus, nanti juga jadi pro!",
+    "🧢 Casual Cruiser": "Larinya santai kayak di pantai. Gak dikejar target, tapi tetap enjoy dan konsisten.",
+    "🏃‍♂️💨 Tryhard Sprinter": "Wuhuu! Kamu udah niat banget. Tapi jangan lupa istirahat juga ya!",
+    "🔥👑 Legendary Strider": "RAJA SEGALANYA! Disiplin, bertenaga, dan lari udah jadi bagian hidupmu!"
+}
 
 # ====== HEADER ======
 st.title("🏃‍♂️ Runalyze Gen-Z")
@@ -33,14 +59,12 @@ if uploaded_file is not None:
             st.markdown("## 💡 Hasil Analisis")
 
             # === Preprocessing Data ===
-            df_raw = df_raw.rename(columns={
-                "Elapsed Time": "duration_sec",
-                "Distance": "distance_km",        
-                "Activity Date": "date",
-            })
+            df_raw = df_raw.rename(columns={col: column_map[col] for col in df_raw.columns if col in column_map})
 
-            df_raw = df_raw[df_raw['Activity Type'] == 'Run']
-            df_raw = df_raw[(df_raw['duration_sec'] > 0) & (df_raw['distance_km'] > 0)]
+            df_raw['distance_km'] = df_raw['distance_km'].astype(str).str.replace(',', '.', regex=False).astype(float)
+
+            df_raw = df_raw[df_raw['activity_type'].isin(['Run', 'Berlari'])]
+            df_raw = df_raw[(df_raw['distance_km'] > 0) & (df_raw['duration_sec'] > 0)]
 
             df_raw['duration_min'] = df_raw['duration_sec'] / 60
             df_raw['date'] = pd.to_datetime(df_raw['date'], errors='coerce')
@@ -100,14 +124,17 @@ if uploaded_file is not None:
 
             user_features['gpa_label'] = user_features['running_gpa'].apply(gpa_label_genz)
 
-            # === TAMPILKAN ===
+            # === TAMPILKAN METRIK ===
             col1, col2 = st.columns(2)
             with col1:
                 st.metric("🏃‍♂️ Tipe Pelari", user_features['runner_label'].iloc[0])
+                st.caption(runner_label_desc[user_features['runner_label'].iloc[0]])
             with col2:
                 st.metric("📊 Running GPA", user_features['running_gpa'].iloc[0], help="Skala 0 - 4")
+                st.caption(gpa_label_desc[user_features['gpa_label'].iloc[0]])
 
             st.markdown(f"### 🧠 Kamu adalah: {user_features['gpa_label'].iloc[0]}")
+            st.info(gpa_label_desc[user_features['gpa_label'].iloc[0]])
 
             st.markdown("### 📋 Rangkuman")
             st.dataframe(user_features)
